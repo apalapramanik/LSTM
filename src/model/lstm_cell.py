@@ -1,3 +1,10 @@
+"""
+LSTM Language Model - LSTM Cell Module
+
+Author: Apala Pramanik
+Description: LSTM cell implementation from scratch with explicit gate computations.
+"""
+
 import torch
 import torch.nn as nn
 

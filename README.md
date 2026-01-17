@@ -1,47 +1,48 @@
 
 
-# GRU From Scratch
+# LSTM From Scratch
 
-This repository implements a **character-level GRU language model from scratch**, with an emphasis on **understanding gated recurrent sequence modeling through explicit implementation**.
+This repository implements a **character-level LSTM language model from scratch**, with an emphasis on **understanding gated recurrent sequence modeling through explicit implementation**.
 
-All core components of the GRU are written manually, including gate computations and hidden-state updates, without using high-level recurrent abstractions such as `nn.GRU`.
+All core components of the LSTM are written manually, including gate computations, cell state updates, and hidden state propagation, without using high-level recurrent abstractions such as `nn.LSTM`.
 
 ---
 
 ## Overview
 
 The model is trained as a **character-level autoregressive language model** on the **WikiText-2 (raw)** dataset.
-Given a sequence of characters, the model learns to predict the next character by maintaining and updating a hidden state over time.
+Given a sequence of characters, the model learns to predict the next character by maintaining and updating hidden and cell states over time.
 
 The implementation focuses on:
 
 * Explicit gate dynamics
-* Sequential hidden-state propagation
+* Sequential hidden-state and cell-state propagation
 * Clear and debuggable training behavior
 
 ---
 
 ## Model Architecture
 
-The model follows a standard stacked GRU language model:
+The model follows a standard stacked LSTM language model:
 
 ```
 tokens
  → token embedding
- → N × GRU layers (from scratch)
+ → N × LSTM layers (from scratch)
  → linear output head
  → next-character prediction
 ```
 
-### GRU Cell
+### LSTM Cell
 
-Each GRU cell explicitly implements:
+Each LSTM cell explicitly implements:
 
-1. Update gate
-2. Reset gate
-3. Candidate hidden state
+1. Input gate
+2. Forget gate
+3. Output gate
+4. Candidate cell state
 
-The hidden state is updated at every time step and propagated through layers, without maintaining a separate cell state.
+The hidden state and cell state are updated at every time step and propagated through layers.
 
 ---
 
@@ -49,10 +50,10 @@ The hidden state is updated at every time step and propagated through layers, wi
 
 ### Core Components
 
-* From-scratch GRU cell (no `nn.GRU`)
+* From-scratch LSTM cell (no `nn.LSTM`)
 * Explicit gate equations
 * Explicit time-step loop
-* Multi-layer GRU stack
+* Multi-layer LSTM stack
 * Linear output projection
 
 ### Training Pipeline
@@ -72,6 +73,7 @@ The hidden state is updated at every time step and propagated through layers, wi
 ### Platform Support
 
 * Apple Silicon (MPS)
+* CUDA
 * CPU fallback
 * Automatic device selection
 
@@ -80,7 +82,7 @@ The hidden state is updated at every time step and propagated through layers, wi
 ## Repository Structure
 
 ```
-gru-from-scratch/
+lstm-from-scratch/
 ├── train.py
 ├── requirements.txt
 ├── checkpoints/
@@ -93,8 +95,8 @@ gru-from-scratch/
 ├── src/
 │   ├── dataset.py
 │   └── model/
-│       ├── gru_cell.py
-│       └── gru_model.py
+│       ├── lstm_cell.py
+│       └── lstm_model.py
 └── README.md
 ```
 
@@ -201,4 +203,3 @@ Text generation is performed using:
 Generated samples provide a qualitative check on learning and sequence modeling capability.
 
 ---
-

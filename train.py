@@ -1,3 +1,10 @@
+"""
+LSTM Language Model - Training Script
+
+Author: Apala Pramanik
+Description: Training script for character-level LSTM language model on WikiText-2.
+"""
+
 import os
 import torch
 import torch.nn as nn
@@ -14,15 +21,13 @@ from src.model.lstm_model import LSTMLanguageModel
 SEQ_LEN = 128
 BATCH_SIZE = 32
 EMBED_DIM = 128
-NUM_HEADS = 4
 NUM_LAYERS = 4
-FF_DIM = 256
 EPOCHS = 5
 LR = 3e-4
 GRAD_CLIP = 1.0
 
 DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-USE_AMP = DEVICE.type == "cuda"   # AMP only safe on CUDA
+USE_AMP = DEVICE.type in ("cuda", "mps")  # AMP supported on CUDA and MPS
 
 CHECKPOINT_DIR = "checkpoints"
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -37,7 +42,7 @@ with open("data/wikitext-2-raw/wiki.train.raw", "r", encoding="utf-8") as f:
 with open("data/wikitext-2-raw/wiki.valid.raw", "r", encoding="utf-8") as f:
     val_text = f.read()
 
-# ---- optional debug mode (recommended initially) ----
+# ---- optional debug mode ----
 # train_text = train_text[:500_000]
 # val_text   = val_text[:100_000]
 
@@ -84,7 +89,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     verbose=True,
 )
 
-scaler = torch.cuda.amp.GradScaler(enabled=USE_AMP)
+scaler = torch.amp.GradScaler(enabled=USE_AMP)
 
 
 # ======================================================
@@ -179,12 +184,11 @@ for epoch in range(1, EPOCHS + 1):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
-        mask = causal_mask(x.size(1), DEVICE)
         optimizer.zero_grad()
 
         if USE_AMP:
-            with torch.cuda.amp.autocast():
-                logits = model(x, mask)
+            with torch.amp.autocast(device_type=DEVICE.type):
+                logits = model(x)
                 loss = criterion(
                     logits.view(-1, VOCAB_SIZE),
                     y.view(-1)
@@ -195,7 +199,7 @@ for epoch in range(1, EPOCHS + 1):
             scaler.step(optimizer)
             scaler.update()
         else:
-            logits = model(x, mask)
+            logits = model(x)
             loss = criterion(
                 logits.view(-1, VOCAB_SIZE),
                 y.view(-1)

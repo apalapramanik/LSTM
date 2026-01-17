@@ -1,3 +1,10 @@
+"""
+LSTM Language Model - Dataset Module
+
+Author: Apala Pramanik
+Description: Character-level dataset for language modeling.
+"""
+
 import torch
 
 

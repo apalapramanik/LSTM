@@ -1,3 +1,10 @@
+"""
+LSTM Language Model - Model Module
+
+Author: Apala Pramanik
+Description: Stacked LSTM language model for character-level text generation.
+"""
+
 import torch
 import torch.nn as nn
 from .lstm_cell import LSTMCell
@@ -37,10 +44,9 @@ class LSTMLanguageModel(nn.Module):
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
 
-    def forward(self, x, mask=None):
+    def forward(self, x):
         """
         x : (B, T)
-        mask : ignored (kept for API compatibility)
         """
 
         B, T = x.size()
