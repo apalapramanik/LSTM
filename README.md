@@ -1,7 +1,4 @@
-Below is a **clean, copy-paste-ready `README.md` for the LSTM implementation**, aligned with your current codebase.
-It **only documents the LSTM model** and **does not require any other changes**.
 
----
 
 # LSTM From Scratch
 
