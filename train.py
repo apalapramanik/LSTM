@@ -146,8 +146,7 @@ def generate_text(
     x = torch.tensor(indices, dtype=torch.long).unsqueeze(0).to(DEVICE)
 
     for _ in range(length):
-        mask = causal_mask(x.size(1), DEVICE)
-        logits = model(x, mask)
+        logits = model(x)
 
         next_logits = logits[0, -1] / temperature
         probs = torch.softmax(next_logits, dim=-1)
