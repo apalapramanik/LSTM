@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 
 from src.dataset import CharDataset
 from src.model.lstm_model import LSTMLanguageModel
-from src.model.attention import causal_mask
 
 
 # ======================================================
@@ -73,6 +72,7 @@ model = LSTMLanguageModel(
 ).to(DEVICE)
 
 
+
 optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 criterion = nn.CrossEntropyLoss()
 
@@ -116,8 +116,7 @@ def evaluate(model, dataloader):
         x = x.to(DEVICE)
         y = y.to(DEVICE)
 
-        mask = causal_mask(x.size(1), DEVICE)
-        logits = model(x, mask)
+        logits = model(x)
 
         loss = criterion(
             logits.view(-1, VOCAB_SIZE),
