@@ -2,19 +2,37 @@
 
 Character-level LSTM language model trained on WikiText-2.
 
+Part of a four-model study comparing recurrent and attention-based architectures on character-level language modeling. Each model is implemented from scratch in PyTorch and trained under identical conditions on the same dataset.
+
+| Model | Val Accuracy | Val Loss | Parameters |
+|-------|-------------|----------|------------|
+| [RNN](https://github.com/apalapramanik/RNN) | 60.80% | 1.31 | 525K |
+| **LSTM** (this repo) | **61.78%** | **1.28** | **1.3M** |
+| [GRU](https://github.com/apalapramanik/GRU) | 62.05% | 1.26 | 1.1M |
+| [Transformer](https://github.com/apalapramanik/Transformers) | 65.59% | 1.19 | 5.0M |
+
 ---
 
 ## Results
 
-**200 epochs · char-level · WikiText-2**
+**200 epochs · char-level · WikiText-2 · NVIDIA H200**
 
 | Metric | Value |
 |--------|-------|
 | Validation accuracy | **61.78%** |
 | Validation loss | 1.28 |
+| Parameters | 1,317,109 |
 
 ![Training curves](loss_curve_lstm.png)
 ![Accuracy curves](accuracy_curve_lstm.png)
+
+**Sample output** (greedy decoding, prompt: `"The history of"`):
+```
+The history of the season , and the state of the season , the state
+of the season was a second season . The state of the season was a
+second season , and the state of the season ...
+```
+*The forget gate gives LSTM slightly more varied output than the vanilla RNN — sentences complete before looping.*
 
 ---
 
@@ -39,6 +57,8 @@ tokens → token embedding (128-dim)
 | Optimizer | Adam (lr=3e-4, weight decay=1e-5) |
 | Scheduler | ReduceLROnPlateau (factor=0.5, patience=3, min_lr=1e-5) |
 | Epochs | 200 |
+
+**Training infrastructure:** Trained on an NVIDIA H200 GPU via SLURM on a university HPC cluster.
 
 ---
 
