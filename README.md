@@ -1,159 +1,83 @@
+# LSTM Language Model
 
-
-# LSTM From Scratch
-
-This repository implements a **character-level LSTM language model from scratch**, with an emphasis on **understanding gated recurrent sequence modeling through explicit implementation**.
-
-All core components of the LSTM are written manually, including gate computations, cell state updates, and hidden state propagation, without using high-level recurrent abstractions such as `nn.LSTM`.
+Character-level LSTM language model trained on WikiText-2.
 
 ---
 
-## Overview
+## Results
 
-The model is trained as a **character-level autoregressive language model** on the **WikiText-2 (raw)** dataset.
-Given a sequence of characters, the model learns to predict the next character by maintaining and updating hidden and cell states over time.
+**200 epochs · char-level · WikiText-2**
 
-The implementation focuses on:
+| Metric | Value |
+|--------|-------|
+| Validation accuracy | **61.78%** |
+| Validation loss | 1.28 |
 
-* Explicit gate dynamics
-* Sequential hidden-state and cell-state propagation
-* Clear and debuggable training behavior
+![Training curves](loss_curve_lstm.png)
+![Accuracy curves](accuracy_curve_lstm.png)
 
 ---
 
-## Model Architecture
-
-The model follows a standard stacked LSTM language model:
+## Architecture
 
 ```
-tokens
- → token embedding
- → N × LSTM layers (from scratch)
- → linear output head
- → next-character prediction
+tokens → token embedding (128-dim)
+       → embedding dropout (0.3)
+       → 8 × LSTM layers (hidden=128, cuDNN)
+       → output dropout (0.3)
+       → linear head → next-character prediction
 ```
 
-### LSTM Cell
-
-Each LSTM cell explicitly implements:
-
-1. Input gate
-2. Forget gate
-3. Output gate
-4. Candidate cell state
-
-The hidden state and cell state are updated at every time step and propagated through layers.
-
----
-
-## Features
-
-### Core Components
-
-* From-scratch LSTM cell (no `nn.LSTM`)
-* Explicit gate equations
-* Explicit time-step loop
-* Multi-layer LSTM stack
-* Linear output projection
-
-### Training Pipeline
-
-* Character-level dataset loader
-* Sliding-window sequence generation
-* Teacher forcing
-* Cross-entropy loss
-* Adam optimizer
-* Gradient clipping
-* Learning-rate scheduling
-* Validation loop
-* Checkpoint saving
-* Text generation
-* Training and validation loss plotting
-
-### Platform Support
-
-* Apple Silicon (MPS)
-* CUDA
-* CPU fallback
-* Automatic device selection
+| Hyperparameter | Value |
+|---|---|
+| Embedding dim | 128 |
+| Hidden dim | 128 |
+| LSTM layers | 8 |
+| Dropout | 0.3 |
+| Sequence length | 128 chars |
+| Batch size | 128 |
+| Optimizer | Adam (lr=3e-4, weight decay=1e-5) |
+| Scheduler | ReduceLROnPlateau (factor=0.5, patience=3, min_lr=1e-5) |
+| Epochs | 200 |
 
 ---
 
 ## Repository Structure
 
 ```
-lstm-from-scratch/
-├── train.py
-├── requirements.txt
+LSTM/
+├── train.py                  # Training script
+├── requirements.txt          # Dependencies
 ├── checkpoints/
-├── loss_curve.png
+│   └── epoch_200_end.pt      # Trained model weights
+├── loss_curve_lstm.png       # Training/validation loss
+├── accuracy_curve_lstm.png   # Training/validation accuracy
 ├── data/
 │   └── wikitext-2-raw/
 │       ├── wiki.train.raw
 │       ├── wiki.valid.raw
 │       └── wiki.test.raw
-├── src/
-│   ├── dataset.py
-│   └── model/
-│       ├── lstm_cell.py
-│       └── lstm_model.py
-└── README.md
+└── src/
+    ├── dataset.py            # CharDataset
+    └── model/
+        └── lstm_model.py     # LSTMLanguageModel
 ```
 
 ---
 
 ## Dataset
 
-The model is trained on **WikiText-2 (raw version)** using **character-level language modeling**.
+**WikiText-2 (raw)** — character-level language modeling.
 
-* No tokenization is used
-* Each training example is a fixed-length character sequence
-* Targets are the same sequence shifted by one character
+| Split | Size |
+|---|---|
+| Training | ~12M characters |
+| Validation | ~1M characters |
+| Vocabulary | ~1,013 unique characters |
 
-Approximate dataset sizes:
+Each sample is a 128-character window; consecutive windows are non-overlapping (stride = seq_len).
 
-* Training: ~12M characters
-* Validation: ~1M characters
-* Test: ~1M characters
-
----
-
-## Requirements
-
-### System Requirements
-
-* macOS, Linux, or Windows
-* Apple Silicon supported via MPS
-* CPU-only execution supported
-
-### Software Requirements
-
-* **Python ≥ 3.10**
-
-All Python dependencies are listed in `requirements.txt`.
-
----
-
-## Installation
-
-### Create a virtual environment
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## Dataset Download
-
-The dataset is downloaded using the Hugging Face `datasets` API and saved locally as plain text.
+Download with the Hugging Face `datasets` library:
 
 ```python
 from datasets import load_dataset
@@ -162,44 +86,71 @@ import os
 dataset = load_dataset("wikitext", "wikitext-2-raw-v1")
 os.makedirs("data/wikitext-2-raw", exist_ok=True)
 
-with open("data/wikitext-2-raw/wiki.train.raw", "w") as f:
-    f.write("\n".join(dataset["train"]["text"]))
+for split, fname in [("train", "wiki.train.raw"), ("validation", "wiki.valid.raw"), ("test", "wiki.test.raw")]:
+    with open(f"data/wikitext-2-raw/{fname}", "w") as f:
+        f.write("\n".join(dataset[split]["text"]))
+```
 
-with open("data/wikitext-2-raw/wiki.valid.raw", "w") as f:
-    f.write("\n".join(dataset["validation"]["text"]))
+---
 
-with open("data/wikitext-2-raw/wiki.test.raw", "w") as f:
-    f.write("\n".join(dataset["test"]["text"]))
+## Installation
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ---
 
 ## Training
 
-Run training from the repository root:
-
 ```bash
 python train.py
 ```
 
-During training, the script:
+The script resumes automatically from the latest checkpoint in `checkpoints/` if one exists.
 
-* Prints batch-level progress
-* Reports training and validation loss per epoch
-* Saves model checkpoints
-* Generates sample text after each epoch
-* Saves a training/validation loss plot (`loss_curve.png`)
+During training it prints per-batch loss, saves checkpoints at mid-epoch and end-of-epoch, generates a short text sample each epoch, and saves loss/accuracy plots on completion.
 
 ---
 
-## Text Generation
+## Loading the Trained Model
 
-Text generation is performed using:
+```python
+import torch
+from src.dataset import CharDataset
+from src.model.lstm_model import LSTMLanguageModel
 
-* Autoregressive decoding
-* Sequential hidden-state propagation
-* Temperature-scaled multinomial sampling
+with open("data/wikitext-2-raw/wiki.train.raw") as f:
+    train_text = f.read()
 
-Generated samples provide a qualitative check on learning and sequence modeling capability.
+dataset = CharDataset(train_text, seq_len=128, stride=128)
+
+model = LSTMLanguageModel(
+    vocab_size=dataset.vocab_size,
+    embed_dim=128,
+    hidden_dim=128,
+    num_layers=8,
+    dropout=0.0,
+)
+ckpt = torch.load("checkpoints/epoch_200_end.pt", map_location="cpu", weights_only=False)
+model.load_state_dict(ckpt["model_state"])
+model.eval()
+
+# Inference
+text = "The market"
+indices = [dataset.stoi[c] for c in text]
+x = torch.tensor(indices).unsqueeze(0)
+with torch.no_grad():
+    logits = model(x)
+next_char = dataset.itos[logits[0, -1].argmax().item()]
+```
 
 ---
+
+## Requirements
+
+- Python ≥ 3.10
+- CUDA-capable GPU recommended
+- See `requirements.txt` for full dependency list
